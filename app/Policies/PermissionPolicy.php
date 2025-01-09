@@ -12,6 +12,6 @@ class PermissionPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('super_admin'); // Only allow super_admin to view permissions
+        return $user->hasRole('Super Admin'); // Only allow Super Admin to view permissions
     }
 }

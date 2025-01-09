@@ -9,9 +9,10 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
@@ -32,6 +33,11 @@ class UserResource extends Resource
                     ->maxLength(255),
                 Forms\Components\Select::make('roles')->multiple()->relationship('roles', 'name'),
                 // Forms\Components\DateTimePicker::make('email_verified_at'),
+                Forms\Components\BelongsToSelect::make('instance_id')
+                    ->relationship('instance', 'name')
+                    ->label('Instance')
+                    ->required(fn() => !auth()->user()->hasRole('Super Admin')) // Required for non-Super Admins
+                    ->visible(fn() => auth()->user()->hasRole('Super Admin') || auth()->user()->instance_id),
                 Forms\Components\TextInput::make('password')
                     ->password()
                     ->required()
@@ -45,22 +51,38 @@ class UserResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
+
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
-                // Tables\Columns\TextColumn::make('email_verified_at')
-                //     ->dateTime()
-                //     ->sortable(),
+
+                Tables\Columns\TextColumn::make('instance.name')
+                    ->label('Instance')
+                    ->sortable()
+                    ->searchable()
+                    ->visible(fn() => auth()->user()->hasRole('Super Admin')), // Only visible to Super Admin
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = Auth::user();
+                if ($user && !$user->hasRole('Super Admin')) {
+                    $query->where('instance_id', $user->instance_id);
+                }
+                return $query;
+            })
             ->filters([
-                //
+                SelectFilter::make('instance_id')
+                    ->relationship('instance', 'name')
+                    ->label('Instance')
+                    ->visible(fn() => auth()->user()->hasRole('Super Admin')), // Only visible to Super Admin
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -71,6 +93,7 @@ class UserResource extends Resource
                 ]),
             ]);
     }
+
 
     public static function getRelations(): array
     {
