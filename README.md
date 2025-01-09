@@ -2,7 +2,6 @@
 
 Follow these steps to set up the application:
 
-## Install JavaScript Dependencies
 ```bash
 npm install && npm run build
 php artisan migrate --seed
