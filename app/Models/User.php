@@ -20,7 +20,10 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'instance_id',
         'email',
         'password',
     ];
@@ -48,8 +51,18 @@ class User extends Authenticatable
         ];
     }
 
+    public function getNameAttribute(): string
+    {
+        return trim("{$this->first_name} {$this->middle_name} {$this->last_name}");
+    }
+
     public function instance(): BelongsTo
     {
         return $this->belongsTo(Instance::class);
+    }
+
+    public function employee()
+    {
+        return $this->hasOne(Employee::class);
     }
 }

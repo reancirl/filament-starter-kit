@@ -18,13 +18,20 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
+    protected static ?string $navigationGroup = 'Setup';
+
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
+                Forms\Components\TextInput::make('first_name')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('middle_name')
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('last_name')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('email')
@@ -37,7 +44,7 @@ class UserResource extends Resource
                     ->relationship('instance', 'name')
                     ->label('Instance')
                     ->required(fn() => !auth()->user()->hasRole('Super Admin')) // Required for non-Super Admins
-                    ->visible(fn() => auth()->user()->hasRole('Super Admin') || auth()->user()->instance_id),
+                    ->visible(fn() => auth()->user()->hasRole('Super Admin')),
                 Forms\Components\TextInput::make('password')
                     ->password()
                     ->required()
@@ -60,6 +67,12 @@ class UserResource extends Resource
                     ->sortable()
                     ->searchable()
                     ->visible(fn() => auth()->user()->hasRole('Super Admin')), // Only visible to Super Admin
+
+                Tables\Columns\TextColumn::make('roles.name')
+                    ->label('Roles')
+                    ->sortable()
+                    ->searchable(),
+                    // ->formatStateUsing(fn($state) => $state ? implode(', ', $state) : 'None')
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

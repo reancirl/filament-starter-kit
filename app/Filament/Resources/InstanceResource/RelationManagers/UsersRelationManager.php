@@ -23,7 +23,12 @@ class UsersRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
+                Forms\Components\TextInput::make('first_name')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('middle_name')
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('last_name')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('email')
