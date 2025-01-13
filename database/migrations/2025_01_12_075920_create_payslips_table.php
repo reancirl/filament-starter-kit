@@ -24,7 +24,6 @@ return new class extends Migration
             $table->date('period_end');
             $table->timestamp('generated_at');
             $table->foreignId('employee_id');
-            $table->foreignId('instance_id');
             $table->timestamps();
         });
     }
