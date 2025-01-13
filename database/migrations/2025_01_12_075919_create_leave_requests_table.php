@@ -19,7 +19,6 @@ return new class extends Migration
             $table->enum('status', ["pending","approved","rejected"]);
             $table->text('reason')->nullable();
             $table->foreignId('employee_id');
-            $table->foreignId('instance_id');
             $table->timestamps();
         });
     }

@@ -42,9 +42,4 @@ class LeaveRequest extends Model
     {
         return $this->belongsTo(Employee::class);
     }
-
-    public function instance(): BelongsTo
-    {
-        return $this->belongsTo(Instance::class);
-    }
 }
