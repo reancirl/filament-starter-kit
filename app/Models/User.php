@@ -9,10 +9,23 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Althinect\FilamentSpatieRolesPermissions\Concerns\HasSuperAdmin;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable, HasRoles, HasSuperAdmin;
+
+     // Other methods and properties...
+
+    /**
+     * Determine if the user can access the Filament panel.
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // return str_ends_with($this->email, '@yourdomain.com') && $this->hasVerifiedEmail();
+        return true;
+    }
 
     /**
      * The attributes that are mass assignable.
