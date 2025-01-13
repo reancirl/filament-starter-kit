@@ -24,7 +24,12 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->default()
+            ->spa()
+            ->brandName(function () {
+                return auth()->check() && auth()->user()?->instance?->name 
+                    ? auth()->user()->instance->name 
+                    : config('app.name');
+            })
             ->id('admin')
             ->path('admin')
             ->login()

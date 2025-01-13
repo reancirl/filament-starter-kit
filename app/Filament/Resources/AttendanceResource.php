@@ -71,9 +71,14 @@ class AttendanceResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('employee.user.name')
+                    ->label('Employee')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('date')
                     ->label('Date')
                     ->sortable()
+                    ->date()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('time_in')
                     ->label('Time In'),
@@ -90,10 +95,6 @@ class AttendanceResource extends Resource
                     })
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('employee.user.name')
-                    ->label('Employee')
-                    ->searchable()
-                    ->sortable(),
             ])
             ->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
@@ -113,6 +114,21 @@ class AttendanceResource extends Resource
                         'leave' => 'Leave',
                         'half-day' => 'Half-Day',
                     ]),
+                Tables\Filters\Filter::make('date')
+                    ->label('Date')
+                    ->form([
+                        Forms\Components\DatePicker::make('date')
+                            ->default(now()->toDateString())
+                            ->required(),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (!empty($data['date'])) {
+                            $query->where('date', $data['date']);
+                        }
+                    })
+                    ->default([
+                        'date' => now()->toDateString(),
+                    ]),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -123,7 +139,6 @@ class AttendanceResource extends Resource
                 ]),
             ]);
     }
-
 
     public static function getRelations(): array
     {
