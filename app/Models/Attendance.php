@@ -15,13 +15,7 @@ class Attendance extends Model
      *
      * @var array
      */
-    protected $fillable = [
-        'date',
-        'time_in',
-        'time_out',
-        'status',
-        'employee_id',
-    ];
+    protected $guarded = [];
 
     /**
      * The attributes that should be cast to native types.

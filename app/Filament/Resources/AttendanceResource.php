@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class AttendanceResource extends Resource
 {
@@ -25,7 +26,44 @@ class AttendanceResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Forms\Components\Select::make('employee_id')
+                    ->relationship('employee', 'id') // Use 'id' as the column for the relationship
+                    ->getSearchResultsUsing(function (string $query) {
+                        $user = auth()->user(); // Get the currently logged-in user
+            
+                        return \App\Models\Employee::whereHas('user', function ($queryBuilder) use ($query, $user) {
+                            $queryBuilder
+                                ->where('first_name', 'LIKE', "%{$query}%")
+                                ->orWhere('middle_name', 'LIKE', "%{$query}%")
+                                ->orWhere('last_name', 'LIKE', "%{$query}%");
+                        })
+                            ->when(!$user->hasRole('Super Admin'), function ($query) use ($user) {
+                                $query->where('instance_id', $user->instance_id); // Filter by instance_id for non-Super Admins
+                            })
+                            ->get()
+                            ->mapWithKeys(function ($employee) {
+                                return [$employee->id => "{$employee->user->first_name} {$employee->user->middle_name} {$employee->user->last_name}"];
+                            });
+                    })
+                    ->getOptionLabelUsing(fn($value) => \App\Models\Employee::find($value)?->user->name) // Use the computed `name` attribute
+                    ->searchable()
+                    ->required(),
+                Forms\Components\DatePicker::make('date')
+                    ->default(now()->toDateString()) // Default to current day
+                    ->required(),
+                Forms\Components\TimePicker::make('time_in')
+                    ->nullable(),
+                Forms\Components\TimePicker::make('time_out')
+                    ->nullable(),
+                Forms\Components\Select::make('status')
+                    ->options([
+                        'present' => 'Present',
+                        'absent' => 'Absent',
+                        'leave' => 'Leave',
+                        'half-day' => 'Half-Day',
+                    ])
+                    ->default('present')
+                    ->required(),
             ]);
     }
 
@@ -33,10 +71,48 @@ class AttendanceResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('date')
+                    ->label('Date')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('time_in')
+                    ->label('Time In'),
+                Tables\Columns\TextColumn::make('time_out')
+                    ->label('Time Out'),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'present' => 'Present',
+                        'absent' => 'Absent',
+                        'leave' => 'Leave',
+                        'half-day' => 'Half-Day',
+                        default => 'Unknown',
+                    })
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('employee.user.name')
+                    ->label('Employee')
+                    ->searchable()
+                    ->sortable(),
             ])
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = Auth::user();
+                if ($user && !$user->hasRole('Super Admin')) {
+                    // Filter employees by the instance_id in the related user
+                    $query->whereHas('employee', function ($query) use ($user) {
+                        $query->where('instance_id', $user->instance_id);
+                    });
+                }
+                return $query;
+            })
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'present' => 'Present',
+                        'absent' => 'Absent',
+                        'leave' => 'Leave',
+                        'half-day' => 'Half-Day',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -47,6 +123,7 @@ class AttendanceResource extends Resource
                 ]),
             ]);
     }
+
 
     public static function getRelations(): array
     {

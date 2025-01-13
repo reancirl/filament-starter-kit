@@ -150,10 +150,7 @@ class EmployeeResource extends Resource
             ->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
                 if ($user && !$user->hasRole('Super Admin')) {
-                    // Filter employees by the instance_id in the related user
-                    $query->whereHas('user', function ($query) use ($user) {
-                        $query->where('instance_id', $user->instance_id);
-                    });
+                    $query->where('instance_id', $user->instance_id);
                 }
                 return $query;
             })
