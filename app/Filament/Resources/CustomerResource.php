@@ -15,7 +15,9 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
-
+use Filament\Tables\Columns\TextColumn;
+use Illuminate\Support\Facades\Auth;
+use Filament\Forms\Components\BelongsToSelect;
 
 class CustomerResource extends Resource
 {
@@ -29,6 +31,13 @@ class CustomerResource extends Resource
             ->schema([
                 Section::make('Personal Information')
                     ->schema([
+
+                        BelongsToSelect::make('instance_id')
+                            ->relationship('instance', 'name')
+                            ->label('Instance')
+                            ->required(fn() => !auth()->user()->hasRole('Super Admin'))
+                            ->visible(fn() => auth()->user()->hasRole('Super Admin')),
+                            
                         TextInput::make('first_name')
                             ->label('First Name')
                             ->required()
@@ -102,15 +111,49 @@ class CustomerResource extends Resource
             ]);
     }
 
-
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('first_name')
+                    ->label('First Name')
+                    ->sortable()
+                    ->searchable(),
+
+                TextColumn::make('last_name')
+                    ->label('Last Name')
+                    ->sortable()
+                    ->searchable(),
+
+                TextColumn::make('email')
+                    ->label('Email')
+                    ->sortable()
+                    ->searchable(),
+
+                TextColumn::make('phone')
+                    ->label('Phone')
+                    ->sortable()
+                    ->searchable(),
+
+                TextColumn::make('city')
+                    ->label('City')
+                    ->sortable()
+                    ->searchable(),
+
+                TextColumn::make('province')
+                    ->label('Province')
+                    ->sortable()
+                    ->searchable(),
             ])
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = Auth::user();
+                if ($user && !$user->hasRole('Super Admin')) {
+                    $query->where('instance_id', $user->instance_id);
+                }
+                return $query;
+            })
             ->filters([
-                //
+                // Add filters here if needed in the future.
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

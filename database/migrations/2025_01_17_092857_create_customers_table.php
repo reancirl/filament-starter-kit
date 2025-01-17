@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
         
             // Personal Information
+            $table->foreignId('instance_id');
             $table->string('first_name', 100);
             $table->string('last_name', 100);
             $table->string('middle_name', 100)->nullable();
