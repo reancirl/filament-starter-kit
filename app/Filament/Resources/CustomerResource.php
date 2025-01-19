@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CustomerResource\Pages;
-use App\Filament\Resources\CustomerResource\RelationManagers;
 use App\Models\Customer;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -11,18 +10,21 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Section;
-use Filament\Tables\Columns\TextColumn;
-use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\BelongsToSelect;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 
 class CustomerResource extends Resource
 {
     protected static ?string $model = Customer::class;
 
+    // Optional: Group it in the sidebar (similar to "Staffing" in EmployeeResource)
+    // protected static ?string $navigationGroup = 'CRM';
+    
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
     public static function form(Form $form): Form
@@ -31,13 +33,16 @@ class CustomerResource extends Resource
             ->schema([
                 Section::make('Personal Information')
                     ->schema([
-
+                        /*
+                         * Only visible for Super Admin. Others automatically get their `instance_id`
+                         * from the Auth user in the saving hook or in modifyQueryUsing (if you handle it that way).
+                         */
                         BelongsToSelect::make('instance_id')
                             ->relationship('instance', 'name')
                             ->label('Instance')
-                            ->required(fn() => !auth()->user()->hasRole('Super Admin'))
-                            ->visible(fn() => auth()->user()->hasRole('Super Admin')),
-                            
+                            ->visible(fn () => auth()->user()->hasRole('Super Admin'))
+                            ->required(fn () => !auth()->user()->hasRole('Super Admin')),
+
                         TextInput::make('first_name')
                             ->label('First Name')
                             ->required()
@@ -60,7 +65,7 @@ class CustomerResource extends Resource
                         TextInput::make('email')
                             ->label('Email')
                             ->email()
-                            ->unique(ignoreRecord: true)  // Allow updates without unique conflicts
+                            ->unique(ignoreRecord: true)
                             ->maxLength(255),
 
                         TextInput::make('phone')
@@ -115,6 +120,13 @@ class CustomerResource extends Resource
     {
         return $table
             ->columns([
+                // Optionally show instance in a column only for Super Admin
+                TextColumn::make('instance.name')
+                    ->label('Instance')
+                    ->visible(fn () => auth()->user()->hasRole('Super Admin'))
+                    ->sortable()
+                    ->searchable(),
+
                 TextColumn::make('first_name')
                     ->label('First Name')
                     ->sortable()
@@ -147,13 +159,22 @@ class CustomerResource extends Resource
             ])
             ->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
+
+                // If the user is not a Super Admin, limit to their instance only
                 if ($user && !$user->hasRole('Super Admin')) {
                     $query->where('instance_id', $user->instance_id);
                 }
+
                 return $query;
             })
             ->filters([
-                // Add filters here if needed in the future.
+                /*
+                 * If you need the same instance filter for Super Admin, just like the EmployeeResource:
+                 */
+                SelectFilter::make('instance_id')
+                    ->relationship('instance', 'name')
+                    ->label('Instance')
+                    ->visible(fn () => auth()->user()->hasRole('Super Admin')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
